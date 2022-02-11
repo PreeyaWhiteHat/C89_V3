@@ -1,0 +1,278 @@
+Step 1
+
+In DrawerNavigator.js
+
+import firebase from "firebase";
+
+export default class DrawerNavigator extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      light_theme: true
+    };
+  }
+ 
+------------------------------------------\
+
+  componentDidMount() {
+    let theme;
+    firebase
+      .database()
+      .ref("/users/" + firebase.auth().currentUser.uid)
+      .on("value", function(snapshot) {
+        theme = snapshot.val().current_theme;
+      });
+    this.setState({ light_theme: theme === "light" ? true : false });
+  }
+
+
+render() {
+    let props = this.props;
+    return (
+      <Drawer.Navigator
+        drawerContentOptions={{
+          activeTintColor: "#e91e63",
+          inactiveTintColor: this.state.light_theme ? "black" : "white",
+          itemStyle: { marginVertical: 5 }
+        }}
+        drawerContent={props => <CustomSidebarMenu {...props} />}
+      >
+        <Drawer.Screen
+          name="Home"
+          component={StackNavigator}
+          options={{ unmountOnBlur: true }}
+        />
+        <Drawer.Screen
+          name="Profile"
+          component={Profile}
+          options={{ unmountOnBlur: true }}
+        />
+        <Drawer.Screen
+          name="Logout"
+          component={Logout}
+          options={{ unmountOnBlur: true }}
+        />
+      </Drawer.Navigator>
+    );
+  }
+--------------------------------------------------
+
+import CustomSidebarMenu from "../screens/CustomSidebarMenu";
+---------------------------------------------------
+
+step 2
+
+create screens/CustomSidebarMenu.js file
+
+import React, { Component } from "react";
+import { SafeAreaView, View, StyleSheet, Image } from "react-native";
+import { RFValue } from "react-native-responsive-fontsize";
+import firebase from "firebase";
+
+import {
+  DrawerContentScrollView,
+  DrawerItemList
+} from "@react-navigation/drawer";
+
+
+export default class CustomSidebarMenu extends Component {
+}
+
+--------------------------------------------------
+  constructor(props) {
+    super(props);
+    this.state = {
+      light_theme: true
+    };
+  }
+
+  componentDidMount() {
+    let theme;
+    firebase
+      .database()
+      .ref("/users/" + firebase.auth().currentUser.uid)
+      .on("value", function(snapshot) {
+        theme = snapshot.val().current_theme;
+      });
+    this.setState({ light_theme: theme === "light" ? true : false });
+  }
+
+
+  render() {
+    let props = this.props;
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: this.state.light_theme ? "white" : "#15193c"
+        }}
+      >
+        <Image
+          source={require("../assets/logo.png")}
+          style={styles.sideMenuProfileIcon}
+        ></Image>
+        <DrawerContentScrollView {...props}>
+          <DrawerItemList {...props} />
+        </DrawerContentScrollView>
+      </View>
+    );
+  }
+}
+
+
+const styles = StyleSheet.create({
+  sideMenuProfileIcon: {
+    width: RFValue(140),
+    height: RFValue(140),
+    borderRadius: RFValue(70),
+    alignSelf: "center",
+    marginTop: RFValue(60),
+    resizeMode: "contain"
+  }
+});
+--------------------------------------------------------
+
+Step 3
+
+In StoryCard.js -
+
+In constructor add -
+
+is_liked: false,
+likes: this.props.story.value.likes
+---------------------
+
+<View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={
+                  this.state.is_liked
+                    ? styles.likeButtonLiked
+                    : styles.likeButtonDisliked
+                }
+                onPress={() => this.likeAction()}
+              >
+                <Ionicons
+                  name={"heart"}
+                  size={RFValue(30)}
+                  color={this.state.light_theme ? "black" : "white"}
+                />
+
+                <Text
+                  style={
+                    this.state.light_theme
+                      ? styles.likeTextLight
+                      : styles.likeText
+                  }
+                >
+                  {this.state.likes}
+                </Text>
+              </TouchableOpacity>
+</View>
+
+------------------------------
+
+ likeButtonLiked: {
+    width: RFValue(160),
+    height: RFValue(40),
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    backgroundColor: "#eb3948",
+    borderRadius: RFValue(30)
+  },
+  likeButtonDisliked: {
+    width: RFValue(160),
+    height: RFValue(40),
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    borderColor: "#eb3948",
+    borderWidth: 2,
+    borderRadius: RFValue(30)
+  },
+---------------------------------
+
+ likeAction = () => {
+    if (this.state.is_liked) {
+      firebase
+        .database()
+        .ref("posts")
+        .child(this.state.story_id)
+        .child("likes")
+        .set(firebase.database.ServerValue.increment(-1));
+      this.setState({ likes: (this.state.likes -= 1), is_liked: false });
+    } else {
+      firebase
+        .database()
+        .ref("posts")
+        .child(this.state.story_id)
+        .child("likes")
+        .set(firebase.database.ServerValue.increment(1));
+      this.setState({ likes: (this.state.likes += 1), is_liked: true });
+    }
+  };
+-----------------------------------------------------
+
+Step 4
+
+In StoryScreen.js
+
+
+ likes: this.props.route.params.story.story.likes,
+ is_liked: false
+
+----------------------------
+
+ <TouchableOpacity
+                  style={
+                    this.state.is_liked
+                      ? styles.likeButtonLiked
+                      : styles.likeButtonDisliked
+                  }
+                  onPress={() => this.likeAction()}
+  >
+
+-----------------------------
+  likeButtonLiked: {
+    flexDirection: "row",
+    width: RFValue(160),
+    height: RFValue(40),
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#eb3948",
+    borderRadius: RFValue(30)
+  },
+  likeButtonDisliked: {
+    flexDirection: "row",
+    width: RFValue(160),
+    height: RFValue(40),
+    justifyContent: "center",
+    alignItems: "center",
+    borderColor: "#eb3948",
+    borderRadius: RFValue(30),
+    borderWidth: 2
+  },
+----------------------------
+
+ likeAction = () => {
+    console.log("here");
+    if (this.state.is_liked) {
+      firebase
+        .database()
+        .ref("posts")
+        .child(this.props.route.params.story_id)
+        .child("likes")
+        .set(firebase.database.ServerValue.increment(-1));
+      this.setState({ likes: (this.state.likes -= 1), is_liked: false });
+    } else {
+      firebase
+        .database()
+        .ref("posts")
+        .child(this.props.route.params.story_id)
+        .child("likes")
+        .set(firebase.database.ServerValue.increment(1));
+      this.setState({ likes: (this.state.likes += 1), is_liked: true });
+    }
+  };
+------------------------------------
+
